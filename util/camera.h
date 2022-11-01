@@ -11,7 +11,9 @@ public:
         Vec3f forward = from - to;
         forward.normalize();
 
-        Vec3f tmp(0, 1, 0);
+        Vec3f tmp(0, 1, 0); 
+        // this from-to method has a limitation, when the camera look straight up or straight down, 
+        // we can not calculate the right vector using cross product, futhermore, more elegant solution is using quaternion interpolation
         Vec3f right = tmp.crossProduct(forward);
         Vec3f up = forward.crossProduct(right);
 
