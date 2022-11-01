@@ -7,3 +7,5 @@
 
 ## Ray Marching
 当学完世界栅格化+栅隔化光线追踪+光线协函数 = 基本上完全掌握Pleonexls文章的所有知识点
+
+## 英伟达Instant Neural Graphics Primitives with a Multiresolution Hash Encoding
