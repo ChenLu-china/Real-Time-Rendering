@@ -88,7 +88,7 @@ struct Ray
         sign[1] = (invdir.y < 0);
         sign[2] = (invdir.z < 0);
     }
-    Point operator ()(const float& t)
+    Point operator ()(const float& t) const
     {
         return orig + t * dir;
     }
@@ -153,9 +153,10 @@ bool raybox(const Ray & ray, const Point bounds[2], float &tmin, float &tmax)
     return true;
 }
 
-float phaseHG()
+float phaseHG(const Vec3f& viewDir, const Vec3f& lightDir, const float& g)
 {
-
+    float costheta = viewDir.dotProduct(lightDir);
+    return 1 / (4 * M_PI) * (1 - g * g) / powf(1 + g * g - 2 * g * costheta, 1.5);
 }
 
 
@@ -208,6 +209,58 @@ void integrate(
     float sigma_a = 0.5;
     float sigma_s = 0.5;
     float sigma_t = sigma_a + sigma_s;
+    float g = 0;
+    size_t d = 2;
+    float shadowOpactity = 1;
+
+    size_t numSteps = std::ceil((tMax - tMin) / stepSize);
+    float stride = (tMax - tMin) / numSteps;
+
+    Vec3f lightDir(-0.315798, 0.719361, 0.618702);
+    Color lightColor(20);
+
+    Color Lvol = 0;
+    float Tvol = 1;
+
+    for (size_t n = 0; n < numSteps; ++n){
+        float t = tMin + stride * (n + 0.5); // ray marching
+
+        Point samplePos = ray(t);
+        float densityVal = lookup(grid, samplePos);
+        float Tsample = exp(-stride * densityVal * sigma_t);
+
+        Tvol *= Tsample;
+
+        float tlMin, tlMax;
+        Ray lightRay(samplePos, lightDir);
+
+        if(densityVal > 0 && raybox(lightRay, grid.bounds, tlMin, tlMax) && tlMax > 0)
+        {
+            size_t numStepsLight = std::ceil((tlMax - tlMin) / stepSize);
+            float strideLight = tlMax / numStepsLight;
+            float densityLight = 0;
+
+            for(size_t nl=0; nl < numStepsLight; ++nl){
+                float tLight = strideLight * (nl + 0.5);
+
+                densityLight += lookup(grid, lightRay(tLight));
+            }
+            float lightRayAtt = exp(-strideLight * densityLight * sigma_t * shadowOpactity);
+            Lvol += lightColor + lightRayAtt * phaseHG(-ray.dir, lightDir, g) * sigma_s * Tvol * stride * densityVal;
+        }
+        if(Tvol < 1e-3){
+            if (rand()/ (float) RAND_MAX > 11.f / d)
+            {
+                break;
+            }
+            else{
+                Tvol *= d;
+            }
+        }
+    }
+
+    L = Lvol;
+    T = Tvol;
 }
 
 void trace(Ray &ray, 
@@ -225,4 +278,13 @@ void trace(Ray &ray,
 void render(const size_t& frame)
 {
     fprintf(stderr, "Rendering frame: %zu\n", frame);
+}
+
+int main()
+{
+    for (size_t frame = 1; frame <= 90; ++frame)
+    {
+       render(frame);     
+    }
+    return 0;
 }
