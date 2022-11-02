@@ -8,7 +8,7 @@
         <li>Mean Free Path: 
         <li>Scatteting: In normal, each volume can also emit light which we are just mentioning for the sake of completeness, just like volumetric object "reflecting" light.
         ```bash
-        
+
         ```    
-    </ull>
+    </ul>
 </div>
