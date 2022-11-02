@@ -1,3 +1,25 @@
+## Camera
+<div>
+    <ul>
+        <li>from to camera
+    </ul>
+</div>
+
+```bash
+```
+
+## Intersection
+<div>
+    <ul>
+        <li>Nearnest Interpolate Method
+        <li>Linear Interpolate Method
+        <li>Bilinear Interpolate Method
+        <li>Trilinear Interpolate Method
+    </ul>
+<div>
+
+```bash
+```
 
 ## Lighting
 <div>
@@ -11,5 +33,10 @@
 </div>
 
 ```bash
-Vector background_color = {r, g, b}
+Vector background_color = {r, g, b};
+float sigma_a = 0.1;
+float distance = 10;
+float T = exp(-distance * sigma_a);
+Vector volume_color = {vr, vg, vb};
+Vector final_color = T * background_color + (1 - T) * volme_color;
 ```  
