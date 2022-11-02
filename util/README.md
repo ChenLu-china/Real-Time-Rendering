@@ -10,6 +10,7 @@
   
     </ul>
 </div>
-```bash
 
-```    
+```bash
+Vector background_color = {r, g, b}
+```  
