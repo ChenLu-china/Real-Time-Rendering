@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <random>
 
-#include "render.h"
 #include "geometry.h"
 
 std::random_device rd;
@@ -101,4 +100,50 @@ public:
     float radius2;
     float raidus;
     Vec3f center;
+};
+
+struct Grid
+{
+    size_t baseResolution = 128;
+    std::unique_ptr<float[]> densityData;
+    Point bounds[2] {Point(-30), Point(30)};
+    float operator ()(const int& xi, const int& yi, const int& zi) const
+    {
+        if(xi < 0 || xi > baseResolution - 1 ||
+           yi < 0 || yi > baseResolution - 1 ||
+           zi < 0 || zi > baseResolution - 1)
+            return 0;
+        return densityData[(zi * baseResolution + yi) * baseResolution + xi];
+    }
+};
+
+struct Ray
+{   
+    Ray(const Point& orig, const Vec3f& dir): orig(orig), dir(dir) 
+    {
+        invdir = 1 / dir;
+
+
+        sign[0] = (invdir.x < 0);
+        sign[1] = (invdir.y < 0);
+        sign[2] = (invdir.z < 0);
+    }
+    Point operator ()(const float& t)const
+    {
+        return orig + t * dir;
+    }
+
+    Point orig;
+    Vec3f dir, invdir;
+    bool sign[3];
+};
+
+struct RenderContext
+{
+    float fov{ 45 };
+    size_t width{ 640 }, height{ 480 };
+    float frameAspectRatio;
+    float focal;
+    float pixelWidth;
+    Color backgroundColor{ 0.572f, 0.772f, 0.921f };
 };

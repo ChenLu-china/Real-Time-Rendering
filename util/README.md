@@ -39,4 +39,40 @@ float distance = 10;
 float T = exp(-distance * sigma_a);
 Vector volume_color = {vr, vg, vb};
 Vector final_color = T * background_color + (1 - T) * volme_color;
-```  
+``` 
+
+<div>
+    <ul>
+        <li>In-Scattering：Imagine that we have a light emitted by a light source traveling through the volume that must happen absorption follow beer law, we need to know how many intensity remain after absorption coefficient.
+    </ul>
+</div>
+
+```bash
+float light_intensity = 10;
+float T = exp(-distance * volume->absorption_coefficient);
+light_intensity_attenuation = T * light_intensity;
+```
+
+For a color we receviced along the particular eye/camera ray that is a combination of light coming from the background and light coming from the light source scattered towards the eye due to the in-scattering.
+
+## ray marching algorithm
+
+A. algorithm intergrates income light along the ray due to in-scattering.
+<div>
+    Work Flow:
+    <ul>
+        <li>1. Find the value for t0 and t1, the points where the camera/eye ray enters and leaves the volume object
+        <li>2. Divide the segment defined by t0-t1 into X number of smaller segments of identical size. Generally we do so by choosing what we call a step size
+        <li>3. What you do next is "march" along the camera ray X times, starting from either t0 or t1 
+        <li>4. Each time we take a step, we shoot a "light ray" starting from the middle of the step (our sample point) to the light.
+    </ul>
+    Simply pseudocode shows in ray_march.cpp
+</div>
+
+```bash
+L(x) = exp(-t1 * volume->absorption_coefficient) * step_size * light_color  
+```
+
+```bash
+
+```

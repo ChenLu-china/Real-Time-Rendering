@@ -384,5 +384,56 @@ public:
 
 typedef Matrix44<float> Matrix44f;
 
+struct Point
+{   Point() : x(0), y(0), z(0) {}
+    Point(const float& value): x(value), y(value), z(value){}
+    Point(const float& xx, const float& yy, const float& zz) : x(xx), y(yy), z(zz){}
+    Point operator * (const Matrix44f &m) const
+    {
+        Point p;
+       
+         
+        p.x     = m[0][0] * x + m[1][0] * y + m[2][0] * z + m[3][0];
+        p.y     = m[0][1] * x + m[1][1] * y + m[2][1] * z + m[3][1];
+        p.z     = m[0][2] * x + m[1][2] * y + m[2][2] * z + m[3][2];
+        float w = m[0][3] * x + m[1][3] * y + m[2][3] * z + m[3][3];
 
+        if (w != 1) {
+            p.x /= w;
+            p.y /= w;
+            p.z /= w;
+        }
+
+        return p;
+    }
+    Point operator * (const Point& p) const
+    { return Point(x * p.x, y * p.y, z * p.z); }
+
+    Point operator + (const Vec3f& v) const
+    { return Point(x + v.x, y + v.y, z + v.z); }
+
+    Vec3f operator - (const Point& p) const
+    { return Vec3f(x - p.x, y - p.y, z - p.z); }
+
+    Point operator / (const Point& p) const
+    { return Point(x / p.x, y / p.y, z / p.z); }
+
+    float x, y, z;
+};
+
+struct Color
+{
+    Color(): r(0), g(0), b(0){}
+    Color(float value) : r(value), g(value), b(value) {}
+    Color(const float& rval, const float& gval, const float& bval) : r(rval), g(gval), b(bval) {}
+    Color& operator += (const Color& c)
+    { r += c.r, g += c.g, b += c.b; return *this; }
+    Color operator * (const float& value) const
+    { return Color(r * value, g * value, b * value); }
+    Color operator + (const Color& c)
+    { return Color(r + c.r, g + c.g, b + c.b); }
+
+    float r, g, b;
+
+};
 
