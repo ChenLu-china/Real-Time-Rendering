@@ -8,6 +8,8 @@
 
 ### Curve曲面和Mesh网格
 
+### BRDF
+
 ### 光线的相关理论知识
 
 ## Ray Marching
