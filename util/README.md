@@ -55,7 +55,7 @@ light_intensity_attenuation = T * light_intensity;
 
 For a color we receviced along the particular eye/camera ray that is a combination of light coming from the background and light coming from the light source scattered towards the eye due to the in-scattering.
 
-## ray marching algorithm
+## Ray Marching Algorithm
 
 A. algorithm intergrates income light along the ray due to in-scattering.
 <div>
@@ -72,6 +72,8 @@ A. algorithm intergrates income light along the ray due to in-scattering.
 ```bash
 L(x) = exp(-t1 * volume->absorption_coefficient) * step_size * light_color  
 ```
+
+In real scene, the forward ray marching is good than backward ray marching, because we can know when the transimssion be 0 that mean there is no light pass through the current volume.
 
 ```bash
 
