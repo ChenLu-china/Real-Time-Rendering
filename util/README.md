@@ -81,4 +81,8 @@ In real scene, the forward ray marching is good than backward ray marching, beca
 ```bash
 
 ```
+    
+##The Phase Function
+    
+$L_i$
 
