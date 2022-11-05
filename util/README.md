@@ -84,5 +84,5 @@ In real scene, the forward ray marching is good than backward ray marching, beca
     
 ## The Phase Function
 <div align=center>    
-$L_i = \sigma_s \int_{S^2}p(x, w, w^{'}L(x, w^{'})\, dw^{'})$
+$L_i = \sigma_s \int_{S^2}p(x, w, w^{'})L(x, w^{'})\, dw^{'}$
 </div>
