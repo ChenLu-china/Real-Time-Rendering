@@ -82,7 +82,7 @@ In real scene, the forward ray marching is good than backward ray marching, beca
 
 ```
     
-##The Phase Function
-    
+## The Phase Function
+<div align=center>    
 $L_i$
-
+</div>
