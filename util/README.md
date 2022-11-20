@@ -78,3 +78,5 @@ In real scene, the forward ray marching is good than backward ray marching, beca
 ```bash
 
 ```
+
+B. Choosing the Step Size
