@@ -28,7 +28,7 @@
         <li>Internal Transmittance: The amount of light being absorbed by the volume as it travels through it. The value from 0(the volume block all the light) to 1(well, it is a vacuum so all light is transmitted).
         <li>Beer Lambert Law: The concept of density is expressed in terms of absorbed coefficient. The denser the volume, the higher absorption coefficient. The equation expressed in T = exp(-distance * sigma_a).
         <li>Mean Free Path: 
-        <li>Scatteting: In normal, each volume can also emit light which we are just mentioning for the sake of completeness, just like volumetric object "reflecting" light. In code, it is represented as a rgb color.
+        <li>Scatterting: In normal, each volume can also emit light which we are just mentioning for the sake of completeness, just like volumetric object "reflecting" light. In code, it is represented as a rgb color.
     </ul>
 </div>
 
@@ -46,6 +46,9 @@ Vector final_color = T * background_color + (1 - T) * volme_color;
         <li>In-Scattering：Imagine that we have a light emitted by a light source traveling through the volume that must happen absorption follow beer law, we need to know how many intensity remain after absorption coefficient.
     </ul>
 </div>
+
+Supplementry:
+The content I mentioned above that some keywords followed the color finally obtain as a viewer, somehow, the energy of light has decrease when it travels to volume, which include out-scattering. Out-Scattering: This causes light that's not traveling towards the eye.
 
 ```bash
 float light_intensity = 10;
@@ -78,5 +81,20 @@ In real scene, the forward ray marching is good than backward ray marching, beca
 ```bash
 
 ```
+<<<<<<< HEAD
 
 B. Choosing the Step Size
+=======
+    
+## The Phase Function
+<div align=center>    
+$$L_i = \sigma_s \int_{S^2}p(x, w, w^{'})L(x, w^{'})\, dw^{'}$$
+</div>
+    
+Where $L_i$ is the in-scattering contribution, $\sigma_s$ is the scattering coefficience, $x$ the sample position and $w$ the view direction, $w^{'}$ donates the light direction. $S^2$ which can also write as $\Omega_{4\pi}$ means that the in-scattering contribution can be calculated by light coming from all directions over the entire sphere. BRDFs that gather light over the hemisphere of directions instead.
+
+n summary, the phase function tells you how much light is likely to be scattered towards the viewer (ω) for any particular incoming light direction (ω′)
+
+Isotropic and Anisotropic
+
+>>>>>>> 520ffad7294cf281698731d4ab0a5523137923da
