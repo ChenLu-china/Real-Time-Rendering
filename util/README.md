@@ -67,7 +67,7 @@ A. algorithm intergrates income light along the ray due to in-scattering.
         <li>1. Find the value for t0 and t1, the points where the camera/eye ray enters and leaves the volume object
         <li>2. Divide the segment defined by t0-t1 into X number of smaller segments of identical size. Generally we do so by choosing what we call a step size
         <li>3. What you do next is "march" along the camera ray X times, starting from either t0 or t1 
-        <li>4. Each time we take a step, we shoot a "light ray" starting from the middle of the step (our sample point) to the light. 是的
+        <li>4. Each time we take a step, we shoot a "light ray" starting from the middle of the step (our sample point) to the light.
     </ul>
     Simply pseudocode shows in ray_march.cpp
 </div>
