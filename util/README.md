@@ -81,14 +81,14 @@ In real scene, the forward ray marching is good than backward ray marching, beca
 ```bash
 
 ```
-<<<<<<< HEAD
 
 B. Choosing the Step Size
-=======
+
+
     
 ## The Phase Function
 <div align=center>    
-$$L_i = \sigma_s \int_{S^2}p(x, w, w^{'})L(x, w^{'})\, dw^{'}$$
+$L_i = \sigma_s \int_{S^2}p(x, w, w^{'})L(x, w^{'})\, dw^{'}$
 </div>
     
 Where $L_i$ is the in-scattering contribution, $\sigma_s$ is the scattering coefficience, $x$ the sample position and $w$ the view direction, $w^{'}$ donates the light direction. $S^2$ which can also write as $\Omega_{4\pi}$ means that the in-scattering contribution can be calculated by light coming from all directions over the entire sphere. BRDFs that gather light over the hemisphere of directions instead.
@@ -97,4 +97,3 @@ n summary, the phase function tells you how much light is likely to be scattered
 
 Isotropic and Anisotropic
 
->>>>>>> 520ffad7294cf281698731d4ab0a5523137923da
