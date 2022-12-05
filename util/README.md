@@ -1,7 +1,8 @@
 ## Camera
 <div>
     <ul>
-        <li>from to camera
+        <li>From-To Camera
+        <li> Share a fuction to recenter c2w matrix
     </ul>
 </div>
 
