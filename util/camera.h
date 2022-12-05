@@ -32,3 +32,9 @@ public:
     Vec3f from, to;
     
 };
+
+Matrix44f Recenter(const Matrix44f& poses)
+{
+    
+    return poses;
+}
