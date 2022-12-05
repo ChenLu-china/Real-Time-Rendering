@@ -27,8 +27,8 @@ public:
         cam2world[2][0] = forward.x, cam2world[2][1] = forward.y, cam2world[2][2] = forward.z;
         cam2world[3][0] = from.x, cam2world[3][1] = from.y, cam2world[3][2] = from.z;     
     }
-
+    
     Matrix44f cam2world;
     Vec3f from, to;
-
+    
 };
