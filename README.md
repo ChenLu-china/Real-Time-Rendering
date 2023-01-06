@@ -14,7 +14,7 @@
 
 ## Ray Marching
 当学完世界栅格化+栅隔化光线追踪+光线协函数 = 基本上完全掌握Pleonexls文章的大部分知识点  
-     [14/Dec/22] 补充世界栅格化细节及背景(MSI)技术补充
+     [14/Dec/22] 补充世界栅格化细节及背景(MSI)技术补充  
      [06/Jan/23] 局部世界栅格化细节
 
 ## 英伟达Instant Neural Graphics Primitives with a Multiresolution Hash Encoding
