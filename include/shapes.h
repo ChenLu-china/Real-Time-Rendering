@@ -68,6 +68,7 @@ private:
 public:
     
     Sphere(const Vec3f &c, const float &r): raidus(r), radius2(r * r), center(raidus){}
+    // this method based on Geometry not the Implicit Modeling 
     bool intersect(const Vec3f &orig, const Vec3f &dir, float &t)
     {
         float t0, t1;
@@ -87,6 +88,32 @@ public:
 
         t = t0;
         return true;
+    }
+    
+    // Implicit Modeling with sphere origin as center  
+    bool interection_implicit(const Vec3f &orig, const Vec3f &dir, float &t){
+        float a = dir.dotProduct(dir);
+        float b = 2 * orig.dotProduct(dir);
+        float c =  orig.dotProduct(orig);
+        
+        float det = b * b - 4 * a * c;
+        float t0 = (- b - sqrt(det)) / (2 * a);
+        float t1 = (- b + sqrt(det)) / (2 * a);
+        
+        if (det < 0)
+            return false;
+        if(t0 == t1){
+            t = t0;
+            return true;
+        }
+        if (t0 < t1){
+            t = t1;
+            return true;
+        }
+        else{
+            t = t0;
+            return true;
+        }
     }
 
     void getSurfaceDate(const Vec3f &Phit, Vec3f &Nhit, Vec2f &tex) const
