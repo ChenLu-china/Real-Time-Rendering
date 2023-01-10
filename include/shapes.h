@@ -94,7 +94,7 @@ public:
     bool interection_implicit(const Vec3f &orig, const Vec3f &dir, float &t){
         float a = dir.dotProduct(dir);
         float b = 2 * orig.dotProduct(dir);
-        float c =  orig.dotProduct(orig);
+        float c =  orig.dotProduct(orig) - radius2;
         
         float det = b * b - 4 * a * c;
         float t0 = (- b - sqrt(det)) / (2 * a);
