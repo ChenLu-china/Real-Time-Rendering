@@ -9,6 +9,7 @@
 
 4. As we pre-set grid size to change offset and scaling to rasteriza coordinate.  
 
-<div>
-  <image>
+
+<div align=center>
+     <img src="" width=80% > <br/>
 </div>
