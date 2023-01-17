@@ -11,5 +11,5 @@
 
 
 <div align=center>
-     <img src="./figs/world2object.jpg" width=80% > <br/>
+     <img src="cudaC++/figs/world2object.jpg" width=80% > <br/>
 </div>
