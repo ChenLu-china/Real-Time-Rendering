@@ -13,8 +13,11 @@ GPU 组织架构：
 
 SM(stream multiprocessor): each grid run on one SM  
   
-WARP: The smallest unit of SM  
+WARP: The smallest unit of SM. Normally, the size of a WARP is 32, because a WARP means a group of 32 threads. The effect of WARP is to aviod
 
+BLOCK：The definiation of BLOCK is same as WARP, but the size of BLOCK not fixed, you can set it flexiable, normally, the times of 32.
+
+Thread: every code run on thread, and the processor of code are same except WARP.
 
 ## Advanced Cuda Extension Programming
 
