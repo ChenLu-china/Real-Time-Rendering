@@ -11,5 +11,5 @@
 
 
 <div align=center>
-     <img src="" width=80% > <br/>
+     <img src="./figs/world2object.jpg" width=80% > <br/>
 </div>
