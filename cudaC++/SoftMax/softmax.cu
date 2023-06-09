@@ -212,7 +212,7 @@ union Pack {
 // 下面分别定义了两个代表输入输出的数据结构
 template<typename SRC, typename DST>
 struct DirectLoad {
-  DirectLoad(SRC* src, int64_t row_size) : src(src), row_size(row_size) {}
+  DirectLoad(SRC* src, int64_t row_size, int64_t img_width) : src(src), row_size(row_size), img_width(img_width), grid_num(row_size - 1) {}
   template<int N>
   device void load(DST* dst, int64_t row, int64_t col) const {
     Pack<SRC, N> pack;
@@ -227,6 +227,8 @@ struct DirectLoad {
   }
   SRC* src;
   int64_t row_size;
+  int64_t grid_num;
+  int64_t img_width;
 };
 
 // template<typename SRC, typename DST>
@@ -245,6 +247,12 @@ struct DirectStore {
 #pragma unroll
     for (int i = 0; i < N; ++i) { pack.elem[i] = static_cast<DST>(src[i]); }
     *(reinterpret_cast<PackType<DST, N>*>(dst) + offset) = pack.storage;
+  }
+  device void save(int64_t row, DST max_t, DST prb_t, DST x_t, int64_t max_col_t){
+    *(max + row) = max_t;
+    *(prb + row) = prb_t;
+    *(x + row) = x_t;
+    *(max_col + row) = max_col_t;
   }
   DST* dst;
   DST* max;
@@ -293,6 +301,7 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
   assert(cols <= cols_per_thread  * thread_group_width);
   // 开一块共享内存，行数为每个线程组一次处理的行数，列数为每个线程处理的元素个数
   ComputeType buf[rows_per_access][cols_per_thread];
+  ComputeType bufx[rows_per_access][cols_per_thread];
 
   // int grid_dim_x;
   // dim3 block_dim(thread_group_width, thread_groups_per_block);
@@ -326,13 +335,16 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
       for (int pack_id = 0; pack_id < num_packs; ++pack_id) {
         // pack的偏移量
         const int pack_offset = pack_id * pack_size;
-        const int col = (pack_id * thread_group_width + lane_id) * pack_size;
+        int col = (pack_id * thread_group_width + lane_id) * pack_size;
         if (!padding || col < cols) {
           load.template load<pack_size>(row_buf + pack_offset, row + row_id, col);
 #pragma unroll
           for (int i = 0; i < pack_size; ++i) {
+            if (thread_max[row_id] < row_buf[pack_offset + i]){
+              thread_index_max[row_id] = col;
+            }
             thread_max[row_id] = max(thread_max[row_id], row_buf[pack_offset + i]);
-            thread_index_max[row_id] = col;
+            col += i;
           }
         } else {
 #pragma unroll
@@ -342,13 +354,10 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
     }
     
     // 开辟一块共享内存记录属于同一个warp的线程组的每一行的最大值的索引，也就是需要进行一次warpReduce max
-    ComputeType warp_maxindex[rows_per_access];
+    int64_t warp_maxindex[rows_per_access];
 #pragma unroll
     for (int row_id = 0; row_id < rows_per_access; ++row_id) {
       warp_maxindex[row_id] = WarpAllFindIndex<MaxOp, MaxIndexOp, ComputeType, thread_group_width>(thread_max[row_id], thread_index_max[row_id]);
-    }
-    if(warp_maxindex[0] == (cols -1)){
-      return;
     }
 #pragma unroll
     for (int row_id = 0; row_id < rows_per_access; ++row_id){
@@ -384,7 +393,7 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
     for (int row_id = 0; row_id < rows_per_access; ++row_id) {
       warp_max[row_id] = WarpAllReduce<MaxOp, ComputeType, thread_group_width>(thread_max[row_id]);
     }
-    // 开辟一块共享内存记录当前线程组处理的每一行的sum
+    // 开辟一块共享内存记录当前线程组处理的每一行的sum and x sum
     ComputeType thread_sum[rows_per_access];
 #pragma unroll
     for (int row_id = 0; row_id < rows_per_access; ++row_id) {
@@ -410,13 +419,21 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
     for (int row_id = 0; row_id < rows_per_access; ++row_id) {
       warp_sum[row_id] = WarpAllReduce<SumOp, ComputeType, thread_group_width>(thread_sum[row_id]);
     }
+    // 开辟一块共享内存记录属于同一个线程的每一行的sumx
+    ComputeType thread_sumx[rows_per_access];
+    // 开辟一块共享内存记录属于同一个线程的每一行的prb
+    ComputeType thread_prb[rows_per_access];
 #pragma unroll
     for (int row_id = 0; row_id < rows_per_access; ++row_id) {
+      thread_sumx[row_id] = 0;
+      thread_prb[row_id] = -Inf<ComputeType>();
       ComputeType* row_buf = buf[row_id];
+      ComputeType* row_bufx = bufx[row_id];
 #pragma unroll
       for (int i = 0; i < cols_per_thread; ++i) {
         if (algorithm == Algorithm::kSoftmax) {
           row_buf[i] = Div(row_buf[i], warp_sum[row_id]);
+          thread_prb[row_id] = max(row_buf[i], thread_prb[row_id]);
         } else if (algorithm == Algorithm::kLogSoftmax) {
           row_buf[i] -= Log(warp_sum[row_id]);
         } else {
@@ -424,13 +441,43 @@ global void SoftmaxWarpImpl(LOAD load, STORE store, const int64_t rows, const in
         }
       }
 #pragma unroll
-      for (int i = 0; i < num_packs; ++i) {
-        const int col = (i * thread_group_width + lane_id) * pack_size;
+      for (int pack_id = 0; pack_id < num_packs; ++pack_id) {
+        const int pack_offset = pack_id * pack_size;
+        int col = (pack_id * thread_group_width + lane_id) * pack_size;
         if (!padding || col < cols) {
-          store.template store<pack_size>(row_buf + i * pack_size, row + row_id, col);
+          store.template store<pack_size>(row_buf + pack_id * pack_size, row + row_id, col);
+        }
+#pragma unroll
+        for (int i = 0; i < pack_size; ++i) {
+            row_bufx[pack_offset + i] = row_buf[pack_offset + i] * col;
+            thread_sumx[row_id] += row_bufx[pack_offset+i];
+            col += i;
         }
       }
     }
+    // 开辟一块共享内存记录属于同一个warp的线程组的每一行的prb
+    ComputeType warp_prb[rows_per_access];
+#pragma unroll
+    for (int row_id = 0; row_id < rows_per_access; ++row_id) {
+      warp_prb[row_id] = WarpAllReduce<MaxOp, ComputeType, thread_group_width>(thread_prb[row_id]);
+    }
+    // 开辟一块共享内存记录属于同一个warp的线程组的每一行的sumx
+    ComputeType warp_sumx[rows_per_access];
+#pragma unroll
+    for (int row_id = 0; row_id < rows_per_access; ++row_id) {
+      warp_sumx[row_id] = WarpAllReduce<SumOp, ComputeType, thread_group_width>(thread_sumx[row_id]);
+      warp_sumx[row_id] = (warp_sumx[row_id] + 0.5) * (load.img_width /load.grid_num ); 
+    }
+#pragma unroll
+    for (int row_id = 0; row_id < rows_per_access; ++row_id){
+      if(warp_maxindex[row_id] == (cols - 1)){
+        store.save(row + row_id, -1.f, warp_prb[row_id], warp_sumx[row_id], warp_maxindex[row_id]);
+      }
+      else{
+          store.save(row + row_id, warp_prb[row_id], warp_prb[row_id], warp_sumx[row_id], warp_maxindex[row_id]);
+      }
+    }
+    // printf("row id is: %d \n", row);
   }
 }
 
@@ -1537,31 +1584,33 @@ int print_helloworld(){
   return 0;
 }
 
-// void runtest(float* input_host, 
-//              int rows, 
-//              int cols){
-int main(){
+// int main(){
+void runtest(float* input_host, 
+             int rows, 
+             int cols,
+             int img_width){
   int __Neg_Infinity=0xFF800000;
   const float Neg_Infinity=*((float *)&__Neg_Infinity);
-  const int rows = 1;
-  const int cols = 320;
+  // const int rows = 3;
+  // const int cols = 128;
+  // const int img_width = 1280;
   const int N = rows * cols;
   cout<< N << endl;
   using ComputeType = typename DefaultComputeType<float>::type;
-  float* input_host = (float*)malloc(N*sizeof(float));
+  // float* input_host = (float*)malloc(N*sizeof(float));
   float *input_device;
   cudaMalloc((void **)&input_device, N*sizeof(float));
-  for (int i = 0; i < N; i++) {
-    if (i == N -1){
-      input_host[i] = 123;
-      // input_host[i] = Neg_Infinity;
-    }
-    else{
-      input_host[i] = i;
-    }  
-  }
+  // for (int i = 0; i < N; i++) {
+  //   if (i % cols == (cols - 1)){
+  //     input_host[i] = 123;
+  //     // input_host[i] = Neg_Infinity;
+  //   }
+  //   else{
+  //     input_host[i] = i % cols;
+  //   }  
+  // }
   cudaMemcpy(input_device, input_host, N*sizeof(float), cudaMemcpyHostToDevice);
-  DirectLoad<float, ComputeType> load(input_device, cols);
+  DirectLoad<float, ComputeType> load(input_device, cols, img_width);
 
   int64_t* MaxCol_device;
   float* max_device; 
@@ -1571,6 +1620,11 @@ int main(){
   cudaMalloc((void **)& max_device, rows * sizeof(float));
   cudaMalloc((void **)& prb_device, rows * sizeof(float));
   cudaMalloc((void **)& x_device, rows * sizeof(float));
+  int64_t* MaxCol_host = (int64_t*)malloc(rows * sizeof(int64_t));
+  float* max_host = (float*)malloc(rows * sizeof(float)); 
+  float* prb_host = (float*)malloc(rows * sizeof(float)); 
+  float* x_host= (float*)malloc(rows * sizeof(float));
+
   float *output_host = (float*)malloc(N * sizeof(float));
   float *output_device;
   cudaMalloc((void **)&output_device, N * sizeof(float));
@@ -1582,18 +1636,36 @@ int main(){
         stream, load, store, rows, cols);
   CUDA_CHECK();
   cudaMemcpy(output_host, output_device, N * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(MaxCol_host, MaxCol_device, rows * sizeof(int64_t), cudaMemcpyDeviceToHost);
+  cudaMemcpy(max_host, max_device, rows * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(prb_host, prb_device, rows * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(x_host, x_device, rows * sizeof(float), cudaMemcpyDeviceToHost);
   // 1 / 32 = 0.03125
-  float sum = 0.f;
-  for (int i = 320; i < 640; i++){
-    sum += output_host[i];
-  }
-  printf("%.10f\n", sum);
-  for (int i = 320; i < 640; i++){
-    printf("%.7f\n", output_host[i]);
+  // float sum = 0.f;
+  // for (int i = 0; i < 320; i++){
+  //   sum += output_host[i];
+  // }
+  // printf("%.10f\n", sum);
+  // for (int i = 0; i < 320; i++){
+  //   printf("%.7f\n", output_host[i]);
+  // }
+  for (int i = 0; i < rows; i++){
+    printf("Max Col is : %d\n", int(MaxCol_host[i]));
+    printf("Max Value is : %.7f\n", max_host[i]);
+    printf("Max Prob is : %.7f\n", prb_host[i]);
+    printf("X is : %.7f\n", x_host[i]);
   }
   cudaFree(input_device);
   cudaFree(output_device);
-  free(input_host);
+  cudaFree(MaxCol_device);
+  cudaFree(max_device);
+  cudaFree(prb_device);
+  cudaFree(x_device);
+  // free(input_host);
   free(output_host);
+  free(MaxCol_host);
+  free(max_host);
+  free(prb_host);
+  free(x_host);
   // return 0;
 }
